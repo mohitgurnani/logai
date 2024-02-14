@@ -5,7 +5,7 @@
 ##
 ##
 workflow_config:  
-  output_dir: "/Users/mohit.gurnani/projects/reports/mldata3"
+  output_dir: "/Users/mohit.gurnani/projects/reports/ahv_ml_data"
   output_file_type: "csv"
   training_type: "unsupervised"
   deduplicate_test: True
@@ -14,7 +14,7 @@ workflow_config:
   train_test_shuffle: True
 
   data_loader_config:
-    train: "/Users/mohit.gurnani/Downloads/acropolis_crash_latest.csv"
+    train: "/Users/mohit.gurnani/Downloads/ahv_anomaly.csv"
     test: "/Users/mohit.gurnani/Downloads/ahv_management.csv"
 
   open_set_partitioner_config:
@@ -29,7 +29,7 @@ workflow_config:
       model_name: "bert-base-cased"
       max_token_len: 512
       custom_tokens: ["BLOCK", "IP", "HEX", "INT"]
-      output_dir: "/Users/mohit.gurnani/projects/reports/mldata3"
+      output_dir: "/Users/mohit.gurnani/projects/reports/ahv_ml_data"
       tokenizer_dirname: "logbert_tokenizer"
       dataset: "normal"
 
@@ -39,7 +39,7 @@ workflow_config:
       algo_params:
           pretrain_from_scratch: False
           model_name: "bert-base-cased"
-          learning_rate: 0.01
+          learning_rate: 0.001
           num_train_epochs: 3
           max_token_len: 256
           per_device_train_batch_size: 16
@@ -53,6 +53,6 @@ workflow_config:
           save_total_limit: 3
           mask_ngram: 8
           eval_steps: 50
-          tokenizer_dirpath: "/Users/mohit.gurnani/projects/reports/mldata3/bert-base-cased_tokenizer"
-          output_dir: "/Users/mohit.gurnani/projects/reports/mldata3/models"
+          tokenizer_dirpath: "/Users/mohit.gurnani/projects/reports/ahv_ml_data/bert-base-cased_tokenizer"
+          output_dir: "/Users/mohit.gurnani/projects/reports/ahv_ml_data/models"
           multi_classifier: True

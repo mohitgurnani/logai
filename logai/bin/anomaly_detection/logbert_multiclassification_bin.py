@@ -64,7 +64,7 @@ def get_features(data=None, cat=None):
   encodings = tokenizer(texts, truncation=True, padding=True)
   labels_df = data.labels.reset_index(drop=True)
   data_loader = DataLoader(encodings, labels_df[constants.LABELS])
-  print("Vectorization complete for %s" % cat)
+  # print("Vectorization complete for %s" % cat)
   return data_loader
 
 
@@ -117,30 +117,32 @@ def divide_df(df, n):
 
 #data_types = {'Column1':str, 'Column2': str, 'Column3': str, 'Column4': int, 'Column5': str, 'Column6': int, 'Column7': str}
 
-if config.data_loader_config.test and os.path.exists(config.data_loader_config.test):
-  test_df = pd.read_csv(config.data_loader_config.test)#), index_col=0) #dtype=data_types, nrows=2000)
-else:
-  exit(1)
+# if config.data_loader_config.test and os.path.exists(config.data_loader_config.test):
+#   test_df = pd.read_csv(config.data_loader_config.test)#), index_col=0) #dtype=data_types, nrows=2000)
+# else:
+#   exit(1)
 if config.data_loader_config.train and os.path.exists(config.data_loader_config.train):
   train_df = pd.read_csv(config.data_loader_config.train)#), index_col=0)#, dtype=data_types, encoding='unicode_escape')#, nrows=2000)
 else:
   exit(1)
 
 train_df = process_df(train_df, "train")
-test_df = process_df(test_df, "test")
+# test_df = process_df(test_df, "test")
 
 # Perform vertical concatenation
-logs_df = pd.concat([train_df, test_df])
+logs_df = train_df#pd.concat([train_df, test_df])
 
 # Reset the index
 logs_df = logs_df.reset_index(drop=True)
 
 # Some more pre-processing
+category_counts = logs_df['label'].value_counts()
+print("Category counts before splitting: %s" % category_counts)
 labels = logs_df['label'].unique().tolist()
 labels = [s.strip() for s in labels]
 num_labels = len(labels)
-id2label = {id + 1: label for id, label in enumerate(labels)}
-label2id = {label: id + 1 for id, label in enumerate(labels)}
+id2label = {id: label for id, label in enumerate(labels)}
+label2id = {label: id for id, label in enumerate(labels)}
 logs_df[constants.LABELS] = logs_df.label.map(lambda x: label2id[x.strip()])
 
 metadata = {constants.LOG_TIMESTAMPS: [constants.LOG_TIMESTAMPS],
@@ -151,7 +153,6 @@ logrecord = LogRecordObject.from_dataframe(logs_df, metadata)
 
 logrecord.save_to_csv(processed_filepath)
 
-print (logrecord.body[constants.LOGLINE_NAME])
 
 # partitioner = OpenSetPartitioner(config.open_set_partitioner_config)
 # logrecord = partitioner.partition(logrecord)
@@ -165,24 +166,31 @@ train_data, dev_data, test_data = split_train_dev_test_for_anomaly_detection(
                 test_data_frac_pos_class=config.test_data_frac_pos,
                 shuffle=config.train_test_shuffle
             )
+category_counts = train_data.labels['labels'].value_counts().rename(index=id2label)
+print("Category counts after splitting: train: %s" % category_counts)
+category_counts = dev_data.labels['labels'].value_counts().rename(index=id2label)
+print("Category counts after splitting: dev: %s" % category_counts)
+category_counts = test_data.labels['labels'].value_counts().rename(index=id2label)
+print("Category counts after splitting: test: %s" % category_counts)
+
 
 train_data.save_to_csv(train_filepath)
 dev_data.save_to_csv(dev_filepath)
 test_data.save_to_csv(test_filepath)
 
-print ('Train/Dev/Test Anomalous', len(train_data.labels[train_data.labels[constants.LABELS]==1]),
-                                   len(dev_data.labels[dev_data.labels[constants.LABELS]==1]),
-                                   len(test_data.labels[test_data.labels[constants.LABELS]==1]))
-print ('Train/Dev/Test Normal', len(train_data.labels[train_data.labels[constants.LABELS]==0]),
-                                   len(dev_data.labels[dev_data.labels[constants.LABELS]==0]),
-                                   len(test_data.labels[test_data.labels[constants.LABELS]==0]))
+# print ('Train/Dev/Test Anomalous', len(train_data.labels[train_data.labels[constants.LABELS]==1]),
+#                                    len(dev_data.labels[dev_data.labels[constants.LABELS]==1]),
+#                                    len(test_data.labels[test_data.labels[constants.LABELS]==1]))
+# print ('Train/Dev/Test Normal', len(train_data.labels[train_data.labels[constants.LABELS]==0]),
+#                                    len(dev_data.labels[dev_data.labels[constants.LABELS]==0]),
+#                                    len(test_data.labels[test_data.labels[constants.LABELS]==0]))
 
 dev_features = get_features(dev_data, "dev")
 train_features = get_features(train_data, "train")
 
 
 anomaly_detector = NNAnomalyDetector(config=config.nn_anomaly_detection_config)
-#anomaly_detector.fit(train_features, dev_features, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
+anomaly_detector.fit(train_features, dev_features, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
 
 del train_features, dev_features
 

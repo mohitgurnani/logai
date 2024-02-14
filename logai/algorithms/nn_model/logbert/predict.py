@@ -275,35 +275,45 @@ class LogBERTMultiClassificationPredict:
                                                                    label2id=kwargs.get("label2id"))
         self.model.to(kwargs.get("device"))
 
-    def predict(self, text, **kwargs):
+    def predict(self, data, **kwargs):
         """Method for running inference on logbert to predict anomalous loglines in test dataset.
 
         :param test_dataset: test dataset of type huggingface Dataset object.
         :return: dict containing instance-wise loss and scores.
         """
         if not self.model:
-            self.load_model()
+            self.load_model(**kwargs)
 
-        inputs = self.tokenizer(text, padding=True, truncation=True, max_length=512, return_tensors="pt").to("cuda")
+        texts = []
+        results = []
+        for text, source_file, log_level in zip(data.body[constants.LOGLINE_NAME],
+                                                data.body[constants.SOURCE_FILE],
+                                                data.severity_number[constants.LOG_SEVERITY_NUMBER]):
+            text = f"{text} [Log Level: {log_level}] [Source File: {source_file}]"
+            texts.append(text)
 
-        # Get model output (logits)
-        outputs = self.model(**inputs)
+            inputs = self.tokenizer(text, padding=True, truncation=True, max_length=512, return_tensors="pt")
+            inputs.to(kwargs.get("device"))
 
-        probs = outputs[0].softmax(1)
-        """ Explanation outputs: The BERT model returns a tuple containing the output logits (and possibly other elements depending on the model configuration). In this case, the output logits are the first element in the tuple, which is why we access it using outputs[0].
+            # Get model output (logits)
+            outputs = self.model(**inputs)
 
-        outputs[0]: This is a tensor containing the raw output logits for each class. The shape of the tensor is (batch_size, num_classes) where batch_size is the number of input samples (in this case, 1, as we are predicting for a single input text) and num_classes is the number of target classes.
+            probs = outputs[0].softmax(1)
+            """ Explanation outputs: The BERT model returns a tuple containing the output logits (and possibly other elements depending on the model configuration). In this case, the output logits are the first element in the tuple, which is why we access it using outputs[0].
+    
+            outputs[0]: This is a tensor containing the raw output logits for each class. The shape of the tensor is (batch_size, num_classes) where batch_size is the number of input samples (in this case, 1, as we are predicting for a single input text) and num_classes is the number of target classes.
+    
+            softmax(1): The softmax function is applied along dimension 1 (the class dimension) to convert the raw logits into class probabilities. Softmax normalizes the logits so that they sum to 1, making them interpretable as probabilities. """
 
-        softmax(1): The softmax function is applied along dimension 1 (the class dimension) to convert the raw logits into class probabilities. Softmax normalizes the logits so that they sum to 1, making them interpretable as probabilities. """
+            # Get the index of the class with the highest probability
+            # argmax() finds the index of the maximum value in the tensor along a specified dimension.
+            # By default, if no dimension is specified, it returns the index of the maximum value in the flattened tensor.
+            pred_label_idx = probs.argmax()
 
-        # Get the index of the class with the highest probability
-        # argmax() finds the index of the maximum value in the tensor along a specified dimension.
-        # By default, if no dimension is specified, it returns the index of the maximum value in the flattened tensor.
-        pred_label_idx = probs.argmax()
+            # Now map the predicted class index to the actual class label
+            # Since pred_label_idx is a tensor containing a single value (the predicted class index),
+            # the .item() method is used to extract the value as a scalar
+            pred_label = self.model.config.id2label[pred_label_idx.item()]
+            results.append([probs, pred_label_idx, pred_label])
 
-        # Now map the predicted class index to the actual class label
-        # Since pred_label_idx is a tensor containing a single value (the predicted class index),
-        # the .item() method is used to extract the value as a scalar
-        pred_label = self.model.config.id2label[pred_label_idx.item()]
-
-        return probs, pred_label_idx, pred_label
+        return results

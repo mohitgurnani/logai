@@ -139,8 +139,8 @@ logs_df = logs_df.reset_index(drop=True)
 labels = logs_df['label'].unique().tolist()
 labels = [s.strip() for s in labels]
 num_labels = len(labels)
-id2label = {id: label for id, label in enumerate(labels)}
-label2id = {label: id for id, label in enumerate(labels)}
+id2label = {id + 1: label for id, label in enumerate(labels)}
+label2id = {label: id + 1 for id, label in enumerate(labels)}
 logs_df[constants.LABELS] = logs_df.label.map(lambda x: label2id[x.strip()])
 
 metadata = {constants.LOG_TIMESTAMPS: [constants.LOG_TIMESTAMPS],
@@ -182,14 +182,33 @@ train_features = get_features(train_data, "train")
 
 
 anomaly_detector = NNAnomalyDetector(config=config.nn_anomaly_detection_config)
-anomaly_detector.fit(train_features, dev_features, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
+#anomaly_detector.fit(train_features, dev_features, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
 
 del train_features, dev_features
 
-test_features = get_features(test_data, "test")
+#test_features = get_features(test_data, "test")
 # For each text, we can check predict logic
-predict_results = anomaly_detector.predict(test_features)
-print(predict_results)
+test_data.labels.reset_index(drop=True, inplace=True)
+predict_results = anomaly_detector.predict(test_data, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
+
+
+y_pred = [label2id[x[2]] for x in predict_results]
+y_true = test_data.labels['labels'].tolist()
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+
+# Assuming y_true and y_pred are your true and predicted labels
+accuracy = accuracy_score(y_true, y_pred)
+print("accuracy - %s" % accuracy)
+precision = precision_score(y_true, y_pred, average='weighted', zero_division=1)  # 'weighted' for multi-class
+print("precision - %s" % precision)
+recall = recall_score(y_true, y_pred, average='weighted', zero_division=1)
+print("recall - %s" % recall)
+f1 = f1_score(y_true, y_pred, average='weighted', zero_division=1)
+print("f1 score - %s" % f1)
+conf_matrix = confusion_matrix(y_true, y_pred)
+classification_rep = classification_report(y_true, y_pred)
+
 
 #--config_file /home/ml/data/logbert_config_sm2.yaml --predict_only 2 --process_data 1 --partition_data 1 --split_needs 1 --tokenization_needed 1
 

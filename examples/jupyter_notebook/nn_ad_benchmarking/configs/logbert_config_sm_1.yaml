@@ -1,0 +1,54 @@
+##
+## Copyright (c) 2023 Salesforce.com, inc.
+## All rights reserved.
+## SPDX-License-Identifier: BSD-3-Clause
+## For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
+##
+##
+workflow_config:  
+  output_dir: "/home/ml/workspace/data/temp_output_n2_1"
+  output_file_type: "csv"
+  training_type: "unsupervised"
+  deduplicate_test: True
+  test_data_frac_pos: 0.5
+  dataset_name: normal
+  train_test_shuffle: True
+
+  data_loader_config:
+    train: "/home/ml/workspace/data/train_data.csv"
+    test: "/home/ml/workspace/data/test_data.csv"
+
+  open_set_partitioner_config:
+    session_window: True
+    sliding_window: -1
+    logsequence_delim: "[SEP]"
+    group_by_time: "4S"
+
+  log_vectorizer_config:
+    algo_name: "logbert"
+    algo_param:
+      model_name: "bert-base-cased"
+      max_token_len: 384
+      custom_tokens: ["BLOCK", "IP", "HEX", "INT"]
+      # output_dir: "/Users/mohit.gurnani/projects/logai/examples/jupyter_notebook/nn_ad_benchmarking/temp_output_n"
+      output_dir: "/home/ml/workspace/data/temp_output_n2_1"
+      tokenizer_dirname: "logbert_tokenizer"
+      dataset: "normal"
+
+
+  nn_anomaly_detection_config:
+      algo_name: "logbert"
+      algo_params:
+          pretrain_from_scratch: False
+          max_token_len: 384
+          model_name: "bert-base-cased"
+          learning_rate: 0.0001
+          num_train_epochs: 5
+          per_device_train_batch_size: 4
+          per_device_eval_batch_size: 25
+          save_strategy: "steps"
+          save_total_limit: 3
+          mask_ngram: 8
+          tokenizer_dirpath: "/home/ml/workspace/data/temp_output_n2_1/bert-base-cased_tokenizer"
+          output_dir: "/home/ml/workspace/data/temp_output_n2_1/models"
+

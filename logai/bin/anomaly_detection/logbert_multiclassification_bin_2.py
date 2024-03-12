@@ -115,89 +115,114 @@ def divide_df(df, n):
     return selected_data
 
 
-#data_types = {'Column1':str, 'Column2': str, 'Column3': str, 'Column4': int, 'Column5': str, 'Column6': int, 'Column7': str}
+# #data_types = {'Column1':str, 'Column2': str, 'Column3': str, 'Column4': int, 'Column5': str, 'Column6': int, 'Column7': str}
 
-if config.data_loader_config.test and os.path.exists(config.data_loader_config.test):
-  test_df = pd.read_csv(config.data_loader_config.test)#), index_col=0) #dtype=data_types, nrows=2000)
-if config.data_loader_config.train and os.path.exists(config.data_loader_config.train):
-  train_df = pd.read_csv(config.data_loader_config.train)#), index_col=0)#, dtype=data_types, encoding='unicode_escape')#, nrows=2000)
-else:
-  exit(1)
+# # if config.data_loader_config.test and os.path.exists(config.data_loader_config.test):
+# #   test_df = pd.read_csv(config.data_loader_config.test)#), index_col=0) #dtype=data_types, nrows=2000)
+# if config.data_loader_config.train and os.path.exists(config.data_loader_config.train):
+#   train_df = pd.read_csv(config.data_loader_config.train)#), index_col=0)#, dtype=data_types, encoding='unicode_escape')#, nrows=2000)
+# else:
+#   exit(1)
 
-train_df = process_df(train_df, "train")
-test_df = process_df(test_df, "test")
+# train_df = process_df(train_df, "train")
+# # test_df = process_df(test_df, "test")
 
-# Perform vertical concatenation
-logs_df = pd.concat([train_df, test_df])
+# # Perform vertical concatenation
+# # logs_df = pd.concat([train_df, test_df])
+# logs_df = train_df
 
-# Reset the index
-logs_df = logs_df.reset_index(drop=True)
+# # Reset the index
+# logs_df = logs_df.reset_index(drop=True)
 
-# Some more pre-processing
-category_counts = logs_df['label'].value_counts()
-print("Category counts before splitting: %s" % category_counts)
-labels = logs_df['label'].unique().tolist()
-labels = [s.strip() for s in labels]
-num_labels = len(labels)
-id2label = {id: label for id, label in enumerate(labels)}
-label2id = {label: id for id, label in enumerate(labels)}
-logs_df[constants.LABELS] = logs_df.label.map(lambda x: label2id[x.strip()])
+# # Some more pre-processing
+# category_counts = logs_df['label'].value_counts()
+# print("Category counts before splitting: %s" % category_counts)
+# labels = logs_df['label'].unique().tolist()
+# labels = [s.strip() for s in labels]
+# num_labels = len(labels)
+# id2label = {id: label for id, label in enumerate(labels)}
+# label2id = {label: id for id, label in enumerate(labels)}
+# logs_df[constants.LABELS] = logs_df.label.map(lambda x: label2id[x.strip()])
 
-metadata = {constants.LOG_TIMESTAMPS: [constants.LOG_TIMESTAMPS],
-            "body": [constants.LOGLINE_NAME, "filename"], constants.LABELS: [constants.LABELS],
-            "severity_text": ["severity"], constants.LOG_SEVERITY_NUMBER: [constants.LOG_SEVERITY_NUMBER]}
+# metadata = {constants.LOG_TIMESTAMPS: [constants.LOG_TIMESTAMPS],
+#             "body": [constants.LOGLINE_NAME, "filename"], constants.LABELS: [constants.LABELS],
+#             "severity_text": ["severity"], constants.LOG_SEVERITY_NUMBER: [constants.LOG_SEVERITY_NUMBER]}
 
-logrecord = LogRecordObject.from_dataframe(logs_df, metadata)
+# logrecord = LogRecordObject.from_dataframe(logs_df, metadata)
 
-logrecord.save_to_csv(processed_filepath)
-
-
-# partitioner = OpenSetPartitioner(config.open_set_partitioner_config)
-# logrecord = partitioner.partition(logrecord)
-# logrecord.save_to_csv(partitioned_filepath)
-
-# print (logrecord.body[constants.LOGLINE_NAME])
-
-train_data, dev_data, test_data = split_train_dev_test_for_anomaly_detection(
-                logrecord,training_type=config.training_type,
-                test_data_frac_neg_class=config.test_data_frac_neg,
-                test_data_frac_pos_class=config.test_data_frac_pos,
-                shuffle=config.train_test_shuffle
-            )
-category_counts = train_data.labels['labels'].value_counts().rename(index=id2label)
-print("Category counts after splitting: train: %s" % category_counts)
-category_counts = dev_data.labels['labels'].value_counts().rename(index=id2label)
-print("Category counts after splitting: dev: %s" % category_counts)
-category_counts = test_data.labels['labels'].value_counts().rename(index=id2label)
-print("Category counts after splitting: test: %s" % category_counts)
+# logrecord.save_to_csv(processed_filepath)
 
 
-train_data.save_to_csv(train_filepath)
-dev_data.save_to_csv(dev_filepath)
-test_data.save_to_csv(test_filepath)
+# # partitioner = OpenSetPartitioner(config.open_set_partitioner_config)
+# # logrecord = partitioner.partition(logrecord)
+# # logrecord.save_to_csv(partitioned_filepath)
 
-# print ('Train/Dev/Test Anomalous', len(train_data.labels[train_data.labels[constants.LABELS]==1]),
-#                                    len(dev_data.labels[dev_data.labels[constants.LABELS]==1]),
-#                                    len(test_data.labels[test_data.labels[constants.LABELS]==1]))
-# print ('Train/Dev/Test Normal', len(train_data.labels[train_data.labels[constants.LABELS]==0]),
-#                                    len(dev_data.labels[dev_data.labels[constants.LABELS]==0]),
-#                                    len(test_data.labels[test_data.labels[constants.LABELS]==0]))
+# # print (logrecord.body[constants.LOGLINE_NAME])
 
-dev_features = get_features(dev_data, "dev")
-train_features = get_features(train_data, "train")
+# train_data, dev_data, test_data = split_train_dev_test_for_anomaly_detection(
+#                 logrecord,training_type=config.training_type,
+#                 test_data_frac_neg_class=config.test_data_frac_neg,
+#                 test_data_frac_pos_class=config.test_data_frac_pos,
+#                 shuffle=config.train_test_shuffle
+#             )
+# category_counts = train_data.labels['labels'].value_counts().rename(index=id2label)
+# print("Category counts after splitting: train: %s" % category_counts)
+# category_counts = dev_data.labels['labels'].value_counts().rename(index=id2label)
+# print("Category counts after splitting: dev: %s" % category_counts)
+# category_counts = test_data.labels['labels'].value_counts().rename(index=id2label)
+# print("Category counts after splitting: test: %s" % category_counts)
 
-torch.cuda.empty_cache()
+
+# train_data.save_to_csv(train_filepath)
+# dev_data.save_to_csv(dev_filepath)
+# test_data.save_to_csv(test_filepath)
+
+# # print ('Train/Dev/Test Anomalous', len(train_data.labels[train_data.labels[constants.LABELS]==1]),
+# #                                    len(dev_data.labels[dev_data.labels[constants.LABELS]==1]),
+# #                                    len(test_data.labels[test_data.labels[constants.LABELS]==1]))
+# # print ('Train/Dev/Test Normal', len(train_data.labels[train_data.labels[constants.LABELS]==0]),
+# #                                    len(dev_data.labels[dev_data.labels[constants.LABELS]==0]),
+# #                                    len(test_data.labels[test_data.labels[constants.LABELS]==0]))
+
+# dev_features = get_features(dev_data, "dev")
+# train_features = get_features(train_data, "train")
+
+# torch.cuda.empty_cache()
+
+
+
+# # Read the CSV file into a DataFrame
+df = pd.read_csv("/home/ml/workspace/data/temp_output_n5/test_ml.csv")
+
+# # Define the ranges for splitting
+ranges = [(0, 100), (101, 200)]
+
+# Iterate over the ranges and save each part to a separate CSV file
+for i, (start, end) in enumerate(ranges, start=1):
+    part_df = df.iloc[start:end+1]  # Extract the part based on the range
+    part_df.to_csv(f"/home/ml/workspace/data/temp_output_n5/test_ml_{i}.csv", index=False)  # Save the part to a CSV fil
+
 
 anomaly_detector = NNAnomalyDetector(config=config.nn_anomaly_detection_config)
-#anomaly_detector.fit(train_features, dev_features, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
+# anomaly_detector.fit(train_features, dev_features, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
 
-del train_features, dev_features
+# del train_features, dev_features
+
+
+# num_labels = 7
+# id2label = {0: 'vm_operation', 1: 'high_availability', 2: 'acropolis_scheduler', 3: 'ahv_networking', 4: 'acropolis_crash', 5: 'ahv_libvirt_qemu', 6: 'gpu'}
+# label2id = {'vm_operation': 0, 'high_availability': 1, 'acropolis_scheduler': 2, 'ahv_networking': 3, 'acropolis_crash': 4, 'ahv_libvirt_qemu': 5, 'gpu': 6}
+num_labels = 8
+id2label = {0: 'vm_operation', 1: 'high_availability', 2: 'acropolis_scheduler', 3: 'ahv_networking', 4: 'acropolis_crash', 5: 'ahv_libvirt_qemu', 6: 'gpu', 7: 'normal'}
+label2id = {'vm_operation': 0, 'high_availability': 1, 'acropolis_scheduler': 2, 'ahv_networking': 3, 'acropolis_crash': 4, 'ahv_libvirt_qemu': 5, 'gpu': 6, 'normal': 7}
+test_data = LogRecordObject.load_from_csv("/home/ml/workspace/data/temp_output_n5/test_ml_1.csv")
+
 
 #test_features = get_features(test_data, "test")
 # For each text, we can check predict logic
 test_data.labels.reset_index(drop=True, inplace=True)
 predict_results = anomaly_detector.predict(test_data, num_labels=num_labels, id2label=id2label, label2id=label2id, device=device)
-
+print(predict_results)
 
 y_pred = [label2id[x[2]] for x in predict_results]
 y_true = test_data.labels['labels'].tolist()

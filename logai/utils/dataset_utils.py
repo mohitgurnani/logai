@@ -53,7 +53,7 @@ def split_train_dev_test_for_anomaly_detection(
     train_ids, test_ids, train_labels, test_labels = train_test_split(
         body_indexes,
         logrecord.labels[constants.LABELS],
-        test_size=0.1,
+        test_size=0.3,
         shuffle=shuffle,
         stratify=stratify,
     )
@@ -83,7 +83,7 @@ def split_train_dev_test_for_anomaly_detection(
 
         if len(dev_ids) == 0:
             train_ids, dev_ids = train_test_split(
-                train_ids, test_size=0.1, shuffle=shuffle
+                train_ids, test_size=0.2, shuffle=shuffle
             )
 
     else:
